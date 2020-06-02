@@ -2,7 +2,7 @@
     "pluginAlias": "SengledHub",
     "pluginType": "platform",
     "headerDisplay": "This plugin uses the existing Sengled Element Home app infrastructure to allow you to control your Sengled accessories.",
-    "footerDisplay": "This plugin is still in beta. If you encounter any issues out of this product, [Issues](https://github.com/j796160836/homebridge-sengled/issues) and [Pull Request](https://github.com/j796160836/homebridge-sengled/pulls) are welcome.",
+    "footerDisplay": "This plugin is still in development. If you encounter any issues out of this product, [Issues](https://github.com/seanchiggins/homebridge-sengled/issues) and [Pull Request](https://github.com/seanchiggins/homebridge-sengled/pulls) are welcome.",
     "schema": {
         "type": "object",
         "properties": {

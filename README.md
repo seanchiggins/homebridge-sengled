@@ -1,4 +1,5 @@
 # homebridge-sengled updated by Sean C. Higgins
+
 An unoffical [Homebridge](https://github.com/nfarina/homebridge) platform plugin for Sengled accessories.
 
 This plugin uses the existing Sengled Element Home app infrastructure to allow you to control your Sengled accessories.
