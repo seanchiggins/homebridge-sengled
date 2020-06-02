@@ -1,17 +1,23 @@
-# homebridge-sengled (Beta)
+# homebridge-sengled updated by Sean C. Higgins
 An unoffical [Homebridge](https://github.com/nfarina/homebridge) platform plugin for Sengled accessories.
 
 This plugin uses the existing Sengled Element Home app infrastructure to allow you to control your Sengled accessories.
 
 Provide your username and password and register as a platform, and it will auto-detect the light bulb you have registered.
 
-Note that I only have **Element Classic A19 Kit (Light bulbs + Hub)** to test  
-https://us.sengled.com/products/element-classic-kit  
+This has been extended to work with the Classic A19, Color Plus A19, and Hub. Color is working ok. Still trying to
+understand the parameters offered from Homebridge and Home Kit.
 
-This plugin is still in beta.  
-If you encounter anything out of this product. Issue and Pull Request is welcome 🙂.
+Improvements on the original version:
 
-# Installation
+- Added device caching to minimize the number of calls to Sengled for information.
+- Added a mutex via async-mutex to only allow one login request at a time.
+- Added a mutex to only allow one request to Sengled at a time. If successful, all other requests use cache.
+- Added initial support for Color.
+
+# Installing
+
+Not sure how you would install this version. Installing the original version via:
 
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-sengled`
@@ -47,7 +53,3 @@ Configuration sample:
   }
 ]
 ```
-
-## Credits
-
-- Inspired by [homebridge-vesync](https://github.com/AlakhaiVaynard/homebridge-vesync) project
