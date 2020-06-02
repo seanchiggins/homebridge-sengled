@@ -17,8 +17,8 @@ The issue that I am having with Color is that Home Kit deals with Hue, Saturatio
 Improvements on the original version:
 
 - Added device caching to minimize the number of calls to Sengled for information.
-- Added a mutex via async-mutex to only allow one login request at a time.
-- Added a mutex to only allow one request to Sengled at a time. If successful, all other requests use cache.
+- Added a mutex via async-mutex to only allow one login request at a time. This minimizes the number of requests to Sengled.
+- Added a mutex to only allow one request to Sengled at a time. If successful, all other requests use cache. Again to minimize the number of requests to Sengled. Seems to be a much smoother operation.
 - Added initial support for Color.
 
 # Installing
