@@ -1,6 +1,6 @@
 {
   "name": "homebridge-sengled",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "A unoffical Homebridge plugin for controlling sengled accessories.",
   "main": "index.js",
   "scripts": {
@@ -8,10 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/j796160836/homebridge-sengled.git"
+    "url": "git://github.com/seanchiggins/homebridge-sengled.git"
   },
   "bugs": {
-    "url": "https://github.com/j796160836/homebridge-sengled/issues"
+    "url": "https://github.com/seanchiggins/homebridge-sengled/issues"
   },
   "devDependencies": {},
   "engines": {
@@ -34,7 +34,7 @@
   ],
   "author": "Johnny Sung",
   "license": "MIT",
-  "homepage": "https://github.com/j796160836/homebridge-sengled#readme",
+  "homepage": "https://github.com/seanchiggins/homebridge-sengled#readme",
   "directories": {
     "lib": "lib"
   }
