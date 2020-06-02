@@ -23,8 +23,6 @@ Improvements on the original version:
 
 # Installing
 
-**Not sure how you would install my version. Installing the original version via:**
-
 1. Install homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g seanchiggins/homebridge-sengled`
 3. Update your configuration file. See below for a sample.
