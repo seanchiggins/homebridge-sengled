@@ -144,6 +144,7 @@ SengledHubPlatform.prototype.didFinishLaunching = function() {
 	if (me.debug) me.log( "didFinishLaunching: " + me.accessories);
 
 	this.deviceDiscovery();
+
 	setInterval(me.deviceDiscovery.bind(me), this.cache_timeout * 6000);
 };
 
@@ -190,6 +191,10 @@ SengledHubPlatform.prototype.deviceDiscovery = function() {
 		// if (me.debug) me.log(me.accessories);
 	}).catch( function( error) {
 		me.log( "deviceDiscovery: Discovery error caught: " + error);
+    if (error == "Error: timeout of 2000ms exceeded") {
+      me.log( "deviceDiscovery: Timeout - Try again");
+      me.deviceDiscovery();
+    }
 	});
 };
 
@@ -352,9 +357,9 @@ SengledHubPlatform.prototype.setPowerState = function(thisPlug, powerState, call
 		// thisPlug.status = device.status;
 		// callback(null, device.status);
 		callback();
-	}).catch((err) => {
+	}).catch( function( error) {
 		me.log("setPowerState: Error: " + error);
-		callback(err);
+		callback( error);
 	});
 };
 
@@ -399,9 +404,9 @@ SengledHubPlatform.prototype.setBrightness = function(thisPlug, brightness, call
 		// thisPlug.brightness = brightness;
 		// callback(null, device.brightness);
 		callback();
-	}).catch((err) => {
+	}).catch( function( error) {
 		me.log( "setBrightness: Error: " + error);
-		callback(err);
+		callback( error);
 	});
 };
 
@@ -485,9 +490,9 @@ SengledHubPlatform.prototype.setHue = function(thisPlug, hue, callback) {
 		return this.client.deviceSetColor(thisPlug.id, color);
 	}).then(() => {
 		callback();
-	}).catch((err) => {
-		this.log("setHue: Error: " + err);
-		callback(err);
+	}).catch( function( error) {
+		this.log("setHue: Error: " +  error);
+		callback( error);
 	});
 }
 
@@ -542,9 +547,9 @@ SengledHubPlatform.prototype.setSaturation = function(thisPlug, saturation, call
 		return this.client.deviceSetColor(thisPlug.id, color);
 	}).then(() => {
 		callback();
-	}).catch((err) => {
-		this.log("setSaturation: Error: ", err);
-		callback(err);
+	}).catch( function( error) {
+		this.log("setSaturation: Error: " + error);
+		callback( error);
 	});
 }
 
@@ -560,9 +565,9 @@ SengledHubPlatform.prototype.setColorTemperature = function(thisPlug, colortempe
 		return this.client.deviceSetColorTemperature(thisPlug.id, colortemperature);
 	}).then(() => {
 		callback();
-	}).catch((err) => {
-		this.log( "setColorTemperature: Error: " + err);
-		callback(err);
+	}).catch( function( error) {
+		this.log( "setColorTemperature: Error: " + error);
+		callback( error);
 	});
 };
 
