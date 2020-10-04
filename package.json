@@ -1,29 +1,50 @@
 {
-  "name": "homebridge-sengled",
-  "version": "0.1.0",
-  "description": "A unoffical Homebridge plugin for controlling sengled accessories.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
+  "_from": "github:seanchiggins/homebridge-sengled",
+  "_id": "homebridge-sengled@0.1.0",
+  "_inBundle": false,
+  "_integrity": "",
+  "_location": "/homebridge-sengled",
+  "_phantomChildren": {},
+  "_requested": {
     "type": "git",
-    "url": "git://github.com/seanchiggins/homebridge-sengled.git"
+    "raw": "seanchiggins/homebridge-sengled",
+    "rawSpec": "seanchiggins/homebridge-sengled",
+    "saveSpec": "github:seanchiggins/homebridge-sengled",
+    "fetchSpec": null,
+    "gitCommittish": null
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "github:seanchiggins/homebridge-sengled#4f0076dbceb110ddc7057d1f129c353ef49695fa",
+  "_spec": "seanchiggins/homebridge-sengled",
+  "_where": "/home/pi",
+  "author": {
+    "name": "Johnny Sung"
   },
   "bugs": {
     "url": "https://github.com/seanchiggins/homebridge-sengled/issues"
   },
-  "devDependencies": {},
-  "engines": {
-    "node": ">=6.9.2",
-    "homebridge": ">=0.2.0"
-  },
+  "bundleDependencies": false,
   "dependencies": {
+    "async-mutex": "0.2.2",
     "axios": "^0.18.1",
     "axios-cookiejar-support": "^0.3.4",
-    "moment": "^2.20.1",
-    "async-mutex": "0.2.2"
+    "color-convert": "^2.0.1",
+    "moment": "^2.20.1"
   },
+  "deprecated": false,
+  "description": "A unoffical Homebridge plugin for controlling sengled accessories.",
+  "devDependencies": {},
+  "directories": {
+    "lib": "lib"
+  },
+  "engines": {
+    "homebridge": ">=0.2.0",
+    "node": ">=6.9.2"
+  },
+  "homepage": "https://github.com/seanchiggins/homebridge-sengled#readme",
   "keywords": [
     "siri",
     "sengled",
@@ -32,10 +53,15 @@
     "ios",
     "homekit"
   ],
-  "author": "Johnny Sung",
   "license": "MIT",
-  "homepage": "https://github.com/seanchiggins/homebridge-sengled#readme",
-  "directories": {
-    "lib": "lib"
-  }
+  "main": "index.js",
+  "name": "homebridge-sengled",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/seanchiggins/homebridge-sengled.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.1.0"
 }

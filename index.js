@@ -3,6 +3,8 @@
 let ElementHomeClient = require('./lib/client');
 let Accessory, Service, Characteristic, UUIDGen;
 
+var convert = require( 'color-convert');
+
 const numberMap = (value, x1, y1, x2, y2) =>
 	((value - x1) * (y2 - x2)) / (y1 - x1) + x2;
 
@@ -23,78 +25,6 @@ function between01( value) {
   } else {
     return value;
   }
-}
-
-function hsbToRGB( h, s, l) {
-  var C = (1 - Math.abs( 2 * l - 1)) * s;
-  var hh = h / 60
-  var X = C * (1 - Math.abs( hh % 2 - 1));
-  var m = l - C / 2.0;
-  var r = 0;
-  var g = 0;
-  var b = 0;
-  if (hh >= 0 && hh < 1) {
-    r = C;
-    g = X;
-  } else if (hh >= 1 && hh < 2) {
-    r = X;
-    g = C;
-  } else if (hh >= 2 && hh < 3) {
-    g = C;
-    b = X;
-  } else if (hh >= 3 && hh < 4) {
-    g = X;
-    b = C;
-  } else if (hh >= 4 && hh < 5) {
-    r = X;
-    b = C;
-  } else {
-    r = C;
-    b = X;
-  }
-
-  r += m;
-  g += m;
-  b += m;
-  r *= 255.0;
-  g *= 255.0;
-  b *= 255.0;
-  r = Math.round( r);
-  g = Math.round( g);
-  b = Math.round( b);
-
-  return [r, g, b];
-}
-
-function rgbToHSB( colorR, colorG, colorB) {
-  var R = colorR / 255.0;
-  var G = colorG / 255.0;
-  var B = colorB / 255.0;
-  var minColor = Math.min( R, G, B);
-  var maxColor = Math.max( R, G, B);
-  var brightness = (maxColor + minColor) / 2.0;
-  if (minColor == maxColor) {
-    var saturation = 0.0;
-    var hue = 0.0;
-  } else {
-    if (brightness > 0.5) {
-      var saturation = (maxColor - minColor) / (2.0 - maxColor - minColor);
-    } else {
-      var saturation = (maxColor - minColor) / (maxColor + minColor);
-    }
-    if (R == maxColor) {
-      var hue = (G - B) / (maxColor - minColor);
-    } else if (G == maxColor) {
-      var hue = 2.0 + (B - R) / (maxColor - minColor);
-    } else {
-      var hue = 4.0 + (R - G) / (maxColor - minColor);
-    }
-    hue = hue * 60;
-    if (hue < 0) {
-      hue = hue + 360;
-    }
-  }
-  return [hue, saturation, brightness];
 }
 
 function SengledHubPlatform(log, config, api) {
@@ -119,11 +49,11 @@ SengledHubPlatform.prototype.configureAccessory = function(accessory) {
 	if (me.debug) me.log("configureAccessory: invoked " + accessory);
 
 	let accessoryId = accessory.context.id;
-	if (this.debug) this.log("configureAccessory: " + accessoryId + " name: " + accessory.context.name);
+	if (this.debug) me.log("configureAccessory: " + accessoryId + " name: " + accessory.context.name);
 
 	// Handle rename case. Depending on which order the accessories come back in, we will want to handle them differently below
 	if (this.accessories[accessoryId]) {
-		if (this.debug) this.log("configureAccessory: Duplicate accessory detected, removing existing if possible, otherwise removing this accessory", accessoryId);
+		if (this.debug) me.log("configureAccessory: Duplicate accessory detected, removing existing if possible, otherwise removing this accessory", accessoryId);
 		try {
 			this.removeAccessory(this.accessories[accessoryId], accessoryId);
 			this.setService(accessory);
@@ -220,10 +150,10 @@ SengledHubPlatform.prototype.addAccessory = function(data) {
 		newAccessory.context.rgbColorB = data.rgbColorB;
 		newAccessory.context.on = data.status;
 		newAccessory.context.productCode = data.productCode;
-    var hsl = rgbToHSB( data.rgbColorR, data.rgbColorG, data.rgvColorB);
-		newAccessory.context.hue = hsl[ 0];
-		newAccessory.context.saturation = hsl[ 1];
-    newAccessory.context.lightness = hsl[ 2];
+    var hsv = convert.rgb.hsv( [ data.rgbColorR, data.rgbColorG, data.rgvColorB]);
+		newAccessory.context.hue = hsv[ 0];
+		newAccessory.context.saturation = hsv[ 1];
+    newAccessory.context.lightness = hsv[ 2];
 
 		newAccessory.addService(Service.Lightbulb, data.name);
 		newAccessory
@@ -269,9 +199,10 @@ SengledHubPlatform.prototype.addAccessory = function(data) {
  * the id is still not determined, attempt to remove the device from the homebridge api to avoid crashes.
  */
 SengledHubPlatform.prototype.removeAccessory = function(accessory, accessoryId = undefined) {
+  let me = this;
 	if (accessory) {
 		let id = accessoryId !== undefined ? accessoryId : (accessory.context === undefined ? undefined : accessory.context.id);
-		if (this.debug) this.log("Removing accessory", id);
+		if (this.debug) me.log("Removing accessory", id);
 
 		try {
 			this.api.unregisterPlatformAccessories("homebridge-sengled", "SengledHub", [accessory]);
@@ -299,12 +230,13 @@ SengledHubPlatform.prototype.setService = function(accessory) {
 		.on('set', this.setBrightness.bind(this, accessory.context))
 		.on('get', this.getBrightness.bind(this, accessory.context));
 	if (accessory.context.productCode == "E11-N1EA") {
+		lightbulbService.getCharacteristic(Characteristic.Hue)
+		//lightbulbService.getCharacteristic(Characteristic.CurrentLightLevel)
+			.on('set', this.setHue.bind(this, accessory.context))
+			.on('get', this.getHue.bind(this, accessory.context));
 		lightbulbService.getCharacteristic(Characteristic.ColorTemperature)
 			.on('set', this.setColorTemperature.bind(this, accessory.context))
 			.on('get', this.getColorTemperature.bind(this, accessory.context));
-		lightbulbService.getCharacteristic(Characteristic.Hue)
-			.on('set', this.setHue.bind(this, accessory.context))
-			.on('get', this.getHue.bind(this, accessory.context));
 		lightbulbService.getCharacteristic(Characteristic.Saturation)
 			.on('set', this.setSaturation.bind(this, accessory.context))
 			.on('get', this.getSaturation.bind(this, accessory.context));
@@ -349,7 +281,7 @@ SengledHubPlatform.prototype.getState = function(accessory) {
 
 SengledHubPlatform.prototype.setPowerState = function(thisPlug, powerState, callback) {
 	let me = this;
-	if (this.debug) this.log("++++ Sending device: " + thisPlug.name + " status change to " + powerState);
+	if (this.debug) me.log("++++ Sending device: " + thisPlug.name + " status change to " + powerState);
 
 	return this.client.login(this.username, this.password).then(() => {
 		return this.client.deviceSetOnOff(thisPlug.id, powerState);
@@ -365,7 +297,7 @@ SengledHubPlatform.prototype.setPowerState = function(thisPlug, powerState, call
 
 SengledHubPlatform.prototype.getPowerState = function(thisPlug, callback) {
 	let me = this;
-	if (this.debug) this.log("getPowerState: Getting device state: " + thisPlug.name + " status");
+	if (this.debug) me.log("getPowerState: Getting device state: " + thisPlug.name + " status");
 	if (this.accessories[thisPlug.id]) {
 		return this.client.login(this.username, this.password).then(() => {
 			return this.client.getDevices();
@@ -375,10 +307,10 @@ SengledHubPlatform.prototype.getPowerState = function(thisPlug, callback) {
 			});
 		}).then((device) => {
 			if (typeof device === 'undefined') {
-				if (this.debug) this.log("getPowerState: Removing undefined device", thisPlug.name);
+				if (this.debug) me.log("getPowerState: Removing undefined device", thisPlug.name);
 				this.removeAccessory(thisPlug)
 			} else {
-				if (this.debug) this.log("getPowerState: Complete: " + thisPlug.name + " is " + device.status);
+				if (this.debug) me.log("getPowerState: Complete: " + thisPlug.name + " is " + device.status);
 				thisPlug.status = device.status;
 				callback(null, device.status);
 			}
@@ -394,8 +326,8 @@ SengledHubPlatform.prototype.getPowerState = function(thisPlug, callback) {
 SengledHubPlatform.prototype.setBrightness = function(thisPlug, brightness, callback) {
 	let me = this;
 	if (me.debug) me.log("++++ setBrightness: " + thisPlug.name + " status brightness to " + brightness);
-	brightness = brightness || 0;
-	brightness = Math.round(numberMap(brightness, 0, 100, 0, 255));
+	 brightness = brightness || 0;
+	 brightness = Math.round(numberMap(brightness, 0, 100, 0, 255));
 	if (me.debug) me.log("++++ Sending device: " + thisPlug.name + " status brightness to " + brightness);
 
 	return this.client.login(this.username, this.password).then(() => {
@@ -412,7 +344,7 @@ SengledHubPlatform.prototype.setBrightness = function(thisPlug, brightness, call
 
 SengledHubPlatform.prototype.getBrightness = function(thisPlug, callback) {
 	let me = this;
-	if (this.debug) this.log("getBrightness: Getting device brightness: " + thisPlug.name + " " + thisPlug.brightness);
+	if (this.debug) me.log("getBrightness: Getting device brightness: " + thisPlug.name + " " + thisPlug.brightness);
 	if (this.accessories[thisPlug.id]) {
 		return this.client.login(this.username, this.password).then(() => {
 			return this.client.getDevices();
@@ -422,12 +354,12 @@ SengledHubPlatform.prototype.getBrightness = function(thisPlug, callback) {
 			});
 		}).then((device) => {
 			if (typeof device === 'undefined') {
-				if (this.debug) this.log("getBrightness: Removing undefined device", thisPlug.name);
+				if (this.debug) me.log("getBrightness: Removing undefined device", thisPlug.name);
 				this.removeAccessory(thisPlug)
 			} else {
 				//me.log( "getBrightness - Found Device: %o", device);
 				var brightness = Math.round(numberMap(device.brightness, 0, 255, 0, 100));
-				if (this.debug) this.log("getBrightness: Complete: " + device.name + " is " + device.brightness);
+				if (this.debug) me.log("getBrightness: Complete: " + device.name + " is " + device.brightness);
 				thisPlug.brightness = brightness;
 				callback(null, brightness);
 			}
@@ -442,7 +374,9 @@ SengledHubPlatform.prototype.getBrightness = function(thisPlug, callback) {
 
 SengledHubPlatform.prototype.getHue = function(thisPlug, callback) {
 	let me = this;
-	if (me.debug) me.log("Getting device hue: " + thisPlug.name);
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log("Getting device hue: " + thisPlug.name);
 	if (me.accessories[thisPlug.id]) {
 		return me.client.login(me.username, me.password).then(() => {
 			return me.client.getDevices();
@@ -455,17 +389,16 @@ SengledHubPlatform.prototype.getHue = function(thisPlug, callback) {
 				if (me.debug) me.log("Removing undefined device", thisPlug.name);
 				me.removeAccessory(thisPlug)
 			} else {
-				if (me.debug) me.log("getHue devices: " + device.name + " is " + device.rgbColorR + " " + device.rgbColorG + " " + device.rgbColorB);
+				if (debug_flag) me.log("getHue devices: " + device.name + " is " + device.rgbColorR + " " + device.rgbColorG + " " + device.rgbColorB);
 				thisPlug.rgbColorR = device.rgbColorR;
 				thisPlug.rgbColorG = device.rgbColorG;
 				thisPlug.rgbColorB = device.rgbColorB;
-        var hsb = rgbToHSB( device.rgbColorR, device.rgbColorG, device.rgbColorB);
-        if (me.debug) me.log( "getHUE HSB: %o", hsb);
-        var color = hsbToRGB( hsb[ 0], hsb[ 1], hsb[ 2]);
-        if (me.debug) me.log( "getHue original color: %o", color);
-        thisPlug.hue = hsb[ 0];
-        thisPlug.saturation = hsb[ 1];
-        thisPlug.lightness = hsb[ 2];
+        thisPlug.brightness = Math.round( numberMap( device.brightness, 0, 255, 0, 100));
+        var hsv = convert.rgb.hsv( [ device.rgbColorR, device.rgbColorG, device.rgbColorB]);
+        if (debug_flag) me.log( "getHUE Convert: %o", hsv);
+        thisPlug.hue = hsv[ 0];
+        thisPlug.saturation = hsv[ 1];
+        thisPlug.lightness = hsv[ 2]
 				callback(null, thisPlug.hue);
 			}
 		}).catch( function( error) {
@@ -478,9 +411,12 @@ SengledHubPlatform.prototype.getHue = function(thisPlug, callback) {
 }
 
 SengledHubPlatform.prototype.setHue = function(thisPlug, hue, callback) {
-	if (this.debug) this.log( "Setting Hue: %o", hue);
-  var color = hsbToRGB( hue, thisPlug.saturation, thisPlug.lightness);
-  if (this.debug) this.log( "Setting color: %o", color);
+  let me = this;
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log( "Setting Hue: %d %d %d", hue, thisPlug.saturation, thisPlug.lightness);
+  var color = convert.hsv.rgb( [ hue, thisPlug.saturation, thisPlug.lightness]);
+  if (debug_flag) me.log( "Setting color: %o", color);
   thisPlug.rgbColorR = color[ 0];
   thisPlug.rgbColorG = color[ 1];
   thisPlug.rgbColorB = color[ 2];
@@ -491,14 +427,16 @@ SengledHubPlatform.prototype.setHue = function(thisPlug, hue, callback) {
 	}).then(() => {
 		callback();
 	}).catch( function( error) {
-		this.log("setHue: Error: " +  error);
+		me.log("setHue: Error: " +  error);
 		callback( error);
 	});
 }
 
 SengledHubPlatform.prototype.getSaturation = function(thisPlug, callback) {
 	let me = this;
-	if (this.debug) me.log("Getting device saturation: " + thisPlug.name);
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log("Getting device saturation: " + thisPlug.name);
 	if (me.accessories[thisPlug.id]) {
 		return me.client.login(me.username, me.password).then(() => {
 			return me.client.getDevices();
@@ -508,18 +446,19 @@ SengledHubPlatform.prototype.getSaturation = function(thisPlug, callback) {
 			});
 		}).then((device) => {
 			if (typeof device === 'undefined') {
-				if (me.debug) me.log("Removing undefined device", thisPlug.name);
+				if (debug_flag) me.log("Removing undefined device", thisPlug.name);
 				me.removeAccessory(thisPlug)
 			} else {
-				if (this.debug) me.log("getSaturation devices: " + device.name + " is " + device.rgbColorR + " " + device.rgbColorG + " " + device.rgbColorB);
+				if (debug_flag) me.log("getSaturation devices: " + device.name + " is " + device.rgbColorR + " " + device.rgbColorG + " " + device.rgbColorB);
 				thisPlug.rgbColorR = device.rgbColorR;
 				thisPlug.rgbColorG = device.rgbColorG;
 				thisPlug.rgbColorB = device.rgbColorB;
-        var hsb = rgbToHSB( device.rgbColorR, device.rgbColorG, device.rgbColorB);
-        if (this.debug) me.log( "getSaturation HSB: %o", hsb);
-        thisPlug.hue = hsb[ 0];
-        thisPlug.saturation = hsb[ 1];
-        thisPlug.lightness = hsb[ 2];
+        thisPlug.brightness = Math.round( numberMap( device.brightness, 0, 255, 0, 100));
+        var hsv = convert.rgb.hsv( [ device.rgbColorR, device.rgbColorG, device.rgbColorB]);
+        if (debug_flag) me.log( "getSaturation HSV: %o", hsv);
+        thisPlug.hue = hsv[ 0];
+        thisPlug.saturation = hsv[ 1];
+        thisPlug.lightness = hsv[ 2];
 				callback(null, thisPlug.saturation);
 			}
 		}).catch( function( error) {
@@ -532,12 +471,15 @@ SengledHubPlatform.prototype.getSaturation = function(thisPlug, callback) {
 }
 
 SengledHubPlatform.prototype.setSaturation = function(thisPlug, saturation, callback) {
-	if (this.debug) this.log( "Setting Saturation: %o", saturation);
-  if (saturation > 1) {
-    saturation = saturation / 100.0;
-  }
-  var color = hsbToRGB( thisPlug.hue, saturation, thisPlug.lightness);
-  if (this.debug) this.log( "Setting color: %o", color);
+  let me = this;
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log( "Setting Saturation: %o", saturation);
+  //if (saturation > 1) {
+    //saturation = saturation / 100.0;
+  //}
+  var color = convert.hsv.rgb( [ thisPlug.hue, saturation, thisPlug.lightness]);
+  if (debug_flag) me.log( "Setting color: %o", color);
   thisPlug.rgbColorR = color[ 0];
   thisPlug.rgbColorG = color[ 1];
   thisPlug.rgbColorB = color[ 2];
@@ -548,32 +490,36 @@ SengledHubPlatform.prototype.setSaturation = function(thisPlug, saturation, call
 	}).then(() => {
 		callback();
 	}).catch( function( error) {
-		this.log("setSaturation: Error: " + error);
+		me.log("setSaturation: Error: " + error);
 		callback( error);
 	});
 }
 
 SengledHubPlatform.prototype.setColorTemperature = function(thisPlug, colortemperature, callback) {
 	let me = this;
-	if (me.debug) me.log("++++ setColortemperature: " + thisPlug.name + " status colortemperature to " + colortemperature);
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log("++++ setColortemperature: " + thisPlug.name + " status colortemperature to " + colortemperature);
 	//colortemperature = colortemperature || 0;
 	colortemperature = Math.round(numberMap(colortemperature, 140, 500, 0, 100));
-	colortemperature = 100 - colortemperature;
-	if (me.debug) me.log("++++ Sending device: " + thisPlug.name + " status colortemperature to " + colortemperature);
+	//colortemperature = 100 - colortemperature;
+	if (debug_flag) me.log("++++ Sending device: " + thisPlug.name + " status colortemperature to " + colortemperature);
 
 	return this.client.login(this.username, this.password).then(() => {
 		return this.client.deviceSetColorTemperature(thisPlug.id, colortemperature);
 	}).then(() => {
 		callback();
 	}).catch( function( error) {
-		this.log( "setColorTemperature: Error: " + error);
+		me.log( "setColorTemperature: Error: " + error);
 		callback( error);
 	});
 };
 
 SengledHubPlatform.prototype.getColorTemperature = function(thisPlug, callback) {
 	let me = this;
-	if (this.debug) this.log("Getting device temperature: " + thisPlug.name);
+  let debug_flag = this.debug;
+  // debug_flag = true;
+	if (debug_flag) me.log("Getting device temperature: " + thisPlug.name);
 	if (this.accessories[thisPlug.id]) {
 		return this.client.login(this.username, this.password).then(() => {
 			return this.client.getDevices();
@@ -586,8 +532,10 @@ SengledHubPlatform.prototype.getColorTemperature = function(thisPlug, callback) 
 				if (me.debug) me.log("Removing undefined device", thisPlug.name);
 				this.removeAccessory(thisPlug)
 			} else {
-				var colortemperature = Math.round(numberMap(100 - device.colortemperature, 0, 100, 140, 500));
-				if (me.debug) me.log("getColortemperature complete: " + device.name + " is " + device.colortemperature);
+				//let colortemperature = Math.round(numberMap(100 - device.colortemperature, 0, 100, 140, 500));
+				let colortemperature = Math.round(numberMap(device.colortemperature, 0, 100, 140, 500));
+				if (debug_flag) me.log("getColortemperature complete: " + device.name + " is " + device.colortemperature);
+        if (debug_flag) me.log( "R: " + device.rgbColorR + " G: " + device.rgbColorG + " B: " + device.rgbColorB);
 				thisPlug.colorTemperature = colortemperature;
 				callback(null, colortemperature);
 			}
